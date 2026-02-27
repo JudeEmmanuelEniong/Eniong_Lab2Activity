@@ -1,0 +1,21 @@
+.page { display: none; }
+.page.active { display: block; }
+
+body.not-authenticated .role-logged-in { display: none !important; }
+body.authenticated .role-logged-out { display: none !important; }
+
+.role-admin { display: none !important; }
+body.is-admin .role-admin { display: block !important; }
+
+.role-not-admin { display: none !important; }
+body.authenticated:not(.is-admin) .role-not-admin { display: inline-block !important; }
+
+.home-list {
+    font-size: 1.1rem;
+    color: #343a40;
+    padding-left: 20px;
+}
+
+.home-list li {
+    margin-bottom: 8px;
+}
