@@ -15,9 +15,12 @@ function handleRouting() {
     const protectedRoutes = ["profile", "my-requests"];
     const adminRoutes = ["accounts", "employees", "departments"];
 
+    // If logged in and tries to go to home, login, or register → redirect to profile
+    if (currentUser && (route === "home" || route === "login" || route === "register")) return navigateTo("#/profile");
+
     if (protectedRoutes.includes(route) && !currentUser) return navigateTo("#/login");
     if (adminRoutes.includes(route) && (!currentUser || currentUser.role !== "Admin")) return navigateTo("#/");
-
+    
     const page = document.getElementById(route + "-page");
     if (page) page.classList.add("active");
 
@@ -143,8 +146,7 @@ function renderRequests() {
     if (userReq.length === 0) {
         container.innerHTML = `
             <p>You have no requests yet.</p>
-            <button class="btn btn-success btn-sm" onclick="showRequestModal()">Create One</button>
-        `;
+            <button class="btn btn-success btn-sm" onclick="showRequestForm()">Create One</button>`;
         return;
     }
 
@@ -173,6 +175,122 @@ function renderRequests() {
                     </tr>`).join("")}
             </tbody>
         </table>`;
+}
+
+function showRequestForm() {
+    document.getElementById("reqType").value = "Equipment";
+    document.getElementById("reqItems").innerHTML = `
+        <div class="d-flex gap-2 mb-2 item-row">
+            <input class="form-control" placeholder="Item name">
+            <input class="form-control" type="number" value="1" style="width:80px">
+            <button class="btn btn-success btn-sm" onclick="addItemRow()">+</button>
+        </div>`;
+    document.getElementById("requestForm").style.display = "block";
+}
+
+function hideRequestForm() {
+    document.getElementById("requestForm").style.display = "none";
+}
+
+function addItemRow() {
+    const container = document.getElementById("reqItems");
+    const row = document.createElement("div");
+    row.className = "d-flex gap-2 mb-2 item-row";
+    row.innerHTML = `
+        <input class="form-control" placeholder="Item name">
+        <input class="form-control" type="number" value="1" style="width:80px">
+        <button class="btn btn-danger btn-sm" onclick="removeItemRow(this)">x</button>`;
+    container.appendChild(row);
+}
+
+function removeItemRow(btn) {
+    btn.parentElement.remove();
+}
+
+function submitRequest() {
+    const type = document.getElementById("reqType").value;
+    const rows = document.querySelectorAll(".item-row");
+    const items = [];
+
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll("input");
+        const name = inputs[0].value.trim();
+        const qty = inputs[1].value;
+        if (name) items.push({ name, qty });
+    });
+
+    if (items.length === 0) return alert("Please add at least one item.");
+    if (!window.db.requests) window.db.requests = [];
+
+    window.db.requests.push({
+        type,
+        items,
+        status: "Pending",
+        date: new Date().toLocaleDateString(),
+        employeeEmail: currentUser.email
+    });
+
+    saveToStorage();
+    hideRequestForm();
+    renderRequests();
+}
+
+function showRequestForm() {
+    document.getElementById("reqType").value = "Equipment";
+    document.getElementById("reqItems").innerHTML = `
+        <div class="d-flex gap-2 mb-2 item-row">
+            <input class="form-control" placeholder="Item name">
+            <input class="form-control" type="number" value="1" style="width:80px">
+            <button class="btn btn-success btn-sm" onclick="addItemRow()">+</button>
+        </div>`;
+    document.getElementById("requestForm").style.display = "block";
+}
+
+function hideRequestForm() {
+    document.getElementById("requestForm").style.display = "none";
+}
+
+function addItemRow() {
+    const container = document.getElementById("reqItems");
+    const row = document.createElement("div");
+    row.className = "d-flex gap-2 mb-2 item-row";
+    row.innerHTML = `
+        <input class="form-control" placeholder="Item name">
+        <input class="form-control" type="number" value="1" style="width:80px">
+        <button class="btn btn-danger btn-sm" onclick="removeItemRow(this)">x</button>`;
+    container.appendChild(row);
+}
+
+function removeItemRow(btn) {
+    btn.parentElement.remove();
+}
+
+function submitRequest() {
+    const type = document.getElementById("reqType").value;
+    const rows = document.querySelectorAll(".item-row");
+    const items = [];
+
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll("input");
+        const name = inputs[0].value.trim();
+        const qty = inputs[1].value;
+        if (name) items.push({ name, qty });
+    });
+
+    if (items.length === 0) return alert("Please add at least one item.");
+    if (!window.db.requests) window.db.requests = [];
+
+    window.db.requests.push({
+        type,
+        items,
+        status: "Pending",
+        date: new Date().toLocaleDateString(),
+        employeeEmail: currentUser.email
+    });
+
+    saveToStorage();
+    hideRequestForm();
+    renderRequests();
 }
 /* ================= ADMIN ACCOUNTS ================= */
 function renderAccounts() {
@@ -323,7 +441,7 @@ function renderRequests() {
         </table>`;
 }
 
-function showRequestModal() {
+function showRequestForm() {
     // Reset modal
     document.getElementById("reqType").value = "Equipment";
     document.getElementById("reqItems").innerHTML = `
