@@ -2,6 +2,15 @@ const STORAGE_KEY = "ipt_demo_v1";
 let currentUser = null;
 window.db = { accounts: [], departments: [], requests: [] };
 
+/* ================= TOAST ================= */
+function showToast(message, type = "success") {
+    const container = document.getElementById("toastContainer");
+    const toast = document.createElement("div");
+    toast.className = `toast-msg toast-${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
 /* ================= ROUTING ================= */
 function navigateTo(hash) {
     window.location.hash = hash;
