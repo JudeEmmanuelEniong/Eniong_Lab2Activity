@@ -143,3 +143,18 @@ h3 {
     from { opacity: 0; transform: translateX(50px); }
     to   { opacity: 1; transform: translateX(0); }
 }
+.badge-status { padding: 4px 10px; border-radius: 20px; font-size: .78rem; font-weight: 600; }
+.badge-pending  { background: #ffc107; color: #000; }
+.badge-approved { background: #198754; color: #fff; }
+.badge-rejected { background: #dc3545; color: #fff; }
+#requestForm .btn {
+    width: auto !important;
+    margin-right: 8px;
+    margin-top: 10px;
+}
+.role-logged-in, .role-admin { display: none; } /* Hide both by default */
+
+body.authenticated .role-logged-in { display: block; }
+body.is-admin .role-admin { display: block; }
+body.is-admin .role-not-admin { display: none; } /* Hide user nav if admin */
+body.not-authenticated .role-logged-out { display: flex; }
