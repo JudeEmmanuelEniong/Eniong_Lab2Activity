@@ -15,16 +15,23 @@
   <a class="navbar-brand text-white" href="#/">Full-Stack App (Jude Emmanuel Eniong)</a>
 
   <div>
-    <!-- Logged Out: Login & Register stacked -->
     <div class="d-flex flex-column align-items-end gap-1 role-logged-out">
       <a href="#/login" class="btn btn-sm btn-outline-light">Login</a>
       <a href="#/register" class="btn btn-sm btn-outline-light">Register</a>
     </div>
 
-    <!-- Logged In as Regular User: just Logout button -->
-    <button onclick="logout()" class="btn btn-sm btn-danger role-logged-in role-not-admin">Logout</button>
+    <div class="dropdown role-logged-in role-not-admin">
+      <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <span id="navUsernameUser">User</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="#/profile">Profile</a></li>
+        <li><a class="dropdown-item" href="#/my-requests">My Requests</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-danger" href="#" onclick="logout()">Logout</a></li>
+      </ul>
+    </div>
 
-    <!-- Logged In as Admin: Dropdown -->
     <div class="dropdown role-admin">
       <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
         <span id="navUsername">Admin</span>
@@ -39,6 +46,7 @@
         <li><a class="dropdown-item text-danger" href="#" onclick="logout()">Logout</a></li>
       </ul>
     </div>
+
   </div>
 </nav>
 
@@ -119,10 +127,37 @@
 </div>
 
   <!-- PROFILE -->
-  <div id="profile-page" class="page">
+<div id="profile-page" class="page">
     <h3>My Profile</h3>
     <div id="profileContent"></div>
-  </div>
+
+    <div id="profileRequestForm" style="display:none; margin-top:20px;">
+        <hr>
+        <h5>New Request</h5>
+        <div class="card p-3" style="max-width:500px;">
+            <div class="mb-2">
+                <label>Type</label>
+                <select class="form-control" id="profileReqType">
+                    <option>Equipment</option>
+                    <option>Leave</option>
+                    <option>Resources</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label>Items</label>
+                <div id="profileReqItems">
+                    <div class="d-flex gap-2 mb-2 profile-item-row">
+                        <input class="form-control" placeholder="Item name">
+                        <input class="form-control" type="number" value="1" style="width:80px">
+                        <button class="btn btn-success btn-sm" onclick="addProfileItemRow()">+</button>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-primary w-50" onclick="submitRequest()">Submit Request</button>
+<button class="btn btn-secondary w-50 mt-2" onclick="hideProfileRequestForm()">Cancel</button>
+        </div>
+    </div>
+</div>
 
   <!-- ACCOUNTS (ADMIN) -->
 <div id="accounts-page" class="page">
@@ -276,7 +311,7 @@
   </div>
 </div>
 
-  <!-- REQUESTS -->
+<!-- REQUESTS PAGE -->
 <div id="my-requests-page" class="page">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>My Requests</h3>
@@ -286,20 +321,18 @@
   <div id="requestsList"></div>
 
   <div id="requestForm" style="display:none;">
-    <div style="max-width:500px; margin:20px auto; border:1px solid #dee2e6; border-radius:8px; background:white; padding:20px;">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5>New Request</h5>
-        <button class="btn btn-sm btn-outline-secondary" onclick="hideRequestForm()">✕</button>
-      </div>
-      <div class="mb-3">
+    <hr>
+    <h5>New Request</h5>
+    <div class="card p-3" style="max-width:500px;">
+      <div class="mb-2">
         <label>Type</label>
         <select class="form-control" id="reqType">
-          <option value="Equipment">Equipment</option>
-          <option value="Leave">Leave</option>
-          <option value="Resources">Resources</option>
+          <option>Equipment</option>
+          <option>Leave</option>
+          <option>Resources</option>
         </select>
       </div>
-      <div class="mb-3">
+      <div class="mb-2">
         <label>Items</label>
         <div id="reqItems">
           <div class="d-flex gap-2 mb-2 item-row">
@@ -309,7 +342,62 @@
           </div>
         </div>
       </div>
-      <button class="btn btn-primary" onclick="submitRequest()">Submit Request</button>
+      <button class="btn btn-primary btn-sm" onclick="submitRequest()">Submit Request</button>
+      <button class="btn btn-secondary btn-sm ms-2" onclick="hideRequestForm()">Cancel</button>
+    </div>
+  </div>
+</div>
+<!-- ADMIN REQUESTS PAGE -->
+<div id="admin-requests-page" class="page">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>All Requests (Admin)</h4>
+    <button class="btn btn-success btn-sm" onclick="showAdminRequestForm()">+ Add Request</button>
+  </div>
+  <table class="table table-bordered">
+    <thead class="table-dark">
+      <tr>
+        <th>#</th>
+        <th>Requested By</th>
+        <th>Email</th>
+        <th>Type</th>
+        <th>Items</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="adminRequestsList"></tbody>
+  </table>
+
+  <!-- Admin Add Request Form -->
+  <div id="adminRequestForm" style="display:none;">
+    <hr>
+    <h5>Add Request</h5>
+    <div class="card p-3" style="max-width:500px;">
+      <div class="mb-2">
+        <label>Account (verified only)</label>
+        <select class="form-control" id="adminReqEmail"></select>
+      </div>
+      <div class="mb-2">
+        <label>Type</label>
+        <select class="form-control" id="adminReqType">
+          <option>Equipment</option>
+          <option>Leave</option>
+          <option>Resources</option>
+        </select>
+      </div>
+      <div class="mb-2">
+        <label>Items</label>
+        <div id="adminReqItems">
+          <div class="d-flex gap-2 mb-2 admin-item-row">
+            <input class="form-control" placeholder="Item name">
+            <input class="form-control" type="number" value="1" style="width:80px">
+            <button class="btn btn-success btn-sm" onclick="addAdminItemRow()">+</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="submitAdminRequest()">Submit Request</button>
+      <button class="btn btn-secondary btn-sm ms-2" onclick="hideAdminRequestForm()">Cancel</button>
     </div>
   </div>
 </div>
