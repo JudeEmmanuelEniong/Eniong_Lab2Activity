@@ -1,6 +1,6 @@
 const STORAGE_KEY = "ipt_demo_v1";
 let currentUser = null;
-window.db = { accounts: [], departments: [], requests: [] };
+window.db = { accounts: [], departments: [], employees: [], requests: [] };
 
 /* ================= TOAST ================= */
 function showToast(message, type = "success") {
@@ -11,6 +11,7 @@ function showToast(message, type = "success") {
     container.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
+
 /* ================= ROUTING ================= */
 function navigateTo(hash) {
     window.location.hash = hash;
@@ -24,24 +25,22 @@ function handleRouting() {
     const protectedRoutes = ["profile", "my-requests"];
     const adminRoutes = ["accounts", "employees", "departments"];
 
-    // If logged in and tries to go to home, login, or register → redirect to profile
-    if (currentUser && (route === "home" || route === "login" || route === "register")) return navigateTo("#/profile");
-
+    if (currentUser && (route === "home" || route === "login" || route === "register")) {
+        return navigateTo("#/profile");
+    }
     if (protectedRoutes.includes(route) && !currentUser) return navigateTo("#/login");
     if (adminRoutes.includes(route) && (!currentUser || currentUser.role !== "Admin")) return navigateTo("#/");
-    
+
     const page = document.getElementById(route + "-page");
     if (page) page.classList.add("active");
 
-    if (route === "profile") renderProfile();
-    if (route === "accounts") renderAccounts();
-    if (route === "my-requests") renderRequests();
+    if (route === "profile")      renderProfile();
+    if (route === "accounts")     renderAccounts();
+    if (route === "my-requests")  renderRequests();
     if (route === "verify-email") showVerifyEmail();
-    if (route === "login") showVerifiedMessage();
-    if (route === "employees") renderEmployees();
-    if (route === "departments") renderDepartments();
-
-    
+    if (route === "login")        showVerifiedMessage();
+    if (route === "employees")    renderEmployees();
+    if (route === "departments")  renderDepartments();
 }
 
 /* ================= AUTH ================= */
@@ -50,18 +49,15 @@ function setAuthState(isAuth, user = null) {
         currentUser = user;
         document.body.classList.remove("not-authenticated");
         document.body.classList.add("authenticated");
-
         const navUsername = document.getElementById("navUsername");
-        if (navUsername) navUsername.textContent = user.firstName;
-
-        if (user.role === "Admin") {
-            document.body.classList.add("is-admin");
-        }
+    if (navUsername) navUsername.textContent = user.firstName;
+    const navUsernameUser = document.getElementById("navUsernameUser");
+    if (navUsernameUser) navUsernameUser.textContent = user.firstName;
+        if (user.role === "Admin") document.body.classList.add("is-admin");
     } else {
         currentUser = null;
         document.body.classList.add("not-authenticated");
         document.body.classList.remove("authenticated", "is-admin");
-
         const navUsername = document.getElementById("navUsername");
         if (navUsername) navUsername.textContent = "User";
     }
@@ -115,193 +111,19 @@ function showVerifiedMessage() {
     }
 }
 
-/* ================= PROFILE ================= */
 function renderProfile() {
     document.getElementById("profileContent").innerHTML = `
-        <div class="card shadow-sm p-3" style="max-width: 500px;">
+        <div class="card shadow-sm p-3" style="max-width:500px;">
             <p><strong>Name:</strong> ${currentUser.firstName} ${currentUser.lastName}</p>
             <p><strong>Email:</strong> ${currentUser.email}</p>
             <p><strong>Role:</strong> ${currentUser.role}</p>
+           <div class="mt-2 d-flex gap-2">
             <button class="btn btn-primary btn-sm" onclick="alert('Edit not implemented')">Edit Profile</button>
-        </div>
-    `;
-}
-
-/* ================= ADMIN ACCOUNTS ================= */
-function renderAccounts() {
-    document.getElementById("accountsList").innerHTML = `
-        <table class="table table-bordered">
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Verified</th></tr></thead>
-            <tbody>
-                ${window.db.accounts.map(a => `
-                    <tr>
-                        <td>${a.firstName} ${a.lastName}</td>
-                        <td>${a.email}</td>
-                        <td>${a.role}</td>
-                        <td>${a.verified ? "✔" : "—"}</td>
-                    </tr>
-                `).join("")}
-            </tbody>
-        </table>
-    `;
-}
-
-/* ================= REQUESTS ================= */
-function renderRequests() {
-    if (!window.db.requests) window.db.requests = [];
-    const userReq = window.db.requests.filter(r => r.employeeEmail === currentUser.email);
-    const container = document.getElementById("requestsList");
-
-    if (userReq.length === 0) {
-        container.innerHTML = `
-            <p>You have no requests yet.</p>
-            <button class="btn btn-success btn-sm" onclick="showRequestForm()">Create One</button>`;
-        return;
-    }
-
-    container.innerHTML = `
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>Items</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${userReq.map(r => `
-                    <tr>
-                        <td>${r.type}</td>
-                        <td>${r.items.map(i => `${i.name} (x${i.qty})`).join(", ")}</td>
-                        <td>${r.date}</td>
-                        <td>
-                            <span class="badge ${
-                                r.status === 'Pending' ? 'bg-warning text-dark' :
-                                r.status === 'Approved' ? 'bg-success' : 'bg-danger'
-                            }">${r.status}</span>
-                        </td>
-                    </tr>`).join("")}
-            </tbody>
-        </table>`;
-}
-
-function showRequestForm() {
-    document.getElementById("reqType").value = "Equipment";
-    document.getElementById("reqItems").innerHTML = `
-        <div class="d-flex gap-2 mb-2 item-row">
-            <input class="form-control" placeholder="Item name">
-            <input class="form-control" type="number" value="1" style="width:80px">
-            <button class="btn btn-success btn-sm" onclick="addItemRow()">+</button>
+</div>
         </div>`;
-    document.getElementById("requestForm").style.display = "block";
 }
 
-function hideRequestForm() {
-    document.getElementById("requestForm").style.display = "none";
-}
-
-function addItemRow() {
-    const container = document.getElementById("reqItems");
-    const row = document.createElement("div");
-    row.className = "d-flex gap-2 mb-2 item-row";
-    row.innerHTML = `
-        <input class="form-control" placeholder="Item name">
-        <input class="form-control" type="number" value="1" style="width:80px">
-        <button class="btn btn-danger btn-sm" onclick="removeItemRow(this)">x</button>`;
-    container.appendChild(row);
-}
-
-function removeItemRow(btn) {
-    btn.parentElement.remove();
-}
-
-function submitRequest() {
-    const type = document.getElementById("reqType").value;
-    const rows = document.querySelectorAll(".item-row");
-    const items = [];
-
-    rows.forEach(row => {
-        const inputs = row.querySelectorAll("input");
-        const name = inputs[0].value.trim();
-        const qty = inputs[1].value;
-        if (name) items.push({ name, qty });
-    });
-
-    if (items.length === 0) return alert("Please add at least one item.");
-    if (!window.db.requests) window.db.requests = [];
-
-    window.db.requests.push({
-        type,
-        items,
-        status: "Pending",
-        date: new Date().toLocaleDateString(),
-        employeeEmail: currentUser.email
-    });
-
-    saveToStorage();
-    hideRequestForm();
-    renderRequests();
-}
-
-function showRequestForm() {
-    document.getElementById("reqType").value = "Equipment";
-    document.getElementById("reqItems").innerHTML = `
-        <div class="d-flex gap-2 mb-2 item-row">
-            <input class="form-control" placeholder="Item name">
-            <input class="form-control" type="number" value="1" style="width:80px">
-            <button class="btn btn-success btn-sm" onclick="addItemRow()">+</button>
-        </div>`;
-    document.getElementById("requestForm").style.display = "block";
-}
-
-function hideRequestForm() {
-    document.getElementById("requestForm").style.display = "none";
-}
-
-function addItemRow() {
-    const container = document.getElementById("reqItems");
-    const row = document.createElement("div");
-    row.className = "d-flex gap-2 mb-2 item-row";
-    row.innerHTML = `
-        <input class="form-control" placeholder="Item name">
-        <input class="form-control" type="number" value="1" style="width:80px">
-        <button class="btn btn-danger btn-sm" onclick="removeItemRow(this)">x</button>`;
-    container.appendChild(row);
-}
-
-function removeItemRow(btn) {
-    btn.parentElement.remove();
-}
-
-function submitRequest() {
-    const type = document.getElementById("reqType").value;
-    const rows = document.querySelectorAll(".item-row");
-    const items = [];
-
-    rows.forEach(row => {
-        const inputs = row.querySelectorAll("input");
-        const name = inputs[0].value.trim();
-        const qty = inputs[1].value;
-        if (name) items.push({ name, qty });
-    });
-
-    if (items.length === 0) return alert("Please add at least one item.");
-    if (!window.db.requests) window.db.requests = [];
-
-    window.db.requests.push({
-        type,
-        items,
-        status: "Pending",
-        date: new Date().toLocaleDateString(),
-        employeeEmail: currentUser.email
-    });
-
-    saveToStorage();
-    hideRequestForm();
-    renderRequests();
-}
-/* ================= ADMIN ACCOUNTS ================= */
+/* ================= ACCOUNTS ================= */
 function renderAccounts() {
     if (!window.db.accounts) window.db.accounts = [];
     const tbody = document.getElementById("accountsList");
@@ -327,7 +149,6 @@ function renderAccounts() {
 
 function showAccountForm(i = null) {
     document.getElementById("accountForm").style.display = "block";
-
     if (i !== null) {
         const acc = window.db.accounts[i];
         document.getElementById("accIndex").value = i;
@@ -354,27 +175,22 @@ function hideAccountForm() {
 
 function saveAccount() {
     const firstName = document.getElementById("accFirstName").value.trim();
-    const lastName = document.getElementById("accLastName").value.trim();
-    const email = document.getElementById("accEmail").value.trim();
-    const password = document.getElementById("accPassword").value.trim();
-    const role = document.getElementById("accRole").value;
-    const verified = document.getElementById("accVerified").checked;
+    const lastName  = document.getElementById("accLastName").value.trim();
+    const email     = document.getElementById("accEmail").value.trim();
+    const password  = document.getElementById("accPassword").value.trim();
+    const role      = document.getElementById("accRole").value;
+    const verified  = document.getElementById("accVerified").checked;
 
-    if (!firstName || !lastName || !email || !password) {
-        return alert("Please fill in all fields.");
-    }
-
+    if (!firstName || !lastName || !email || !password) return alert("Please fill in all fields.");
     if (password.length < 6) return alert("Password must be at least 6 characters.");
 
     const index = document.getElementById("accIndex").value;
-
     if (index === "") {
         const exists = window.db.accounts.find(a => a.email === email);
         if (exists) return alert("Email already exists.");
     }
 
     const accData = { firstName, lastName, email, password, role, verified };
-
     if (index !== "") {
         window.db.accounts[parseInt(index)] = accData;
     } else {
@@ -384,6 +200,7 @@ function saveAccount() {
     saveToStorage();
     hideAccountForm();
     renderAccounts();
+    showToast("Account saved.", "success");
 }
 
 function editAccount(i) {
@@ -396,7 +213,7 @@ function resetPassword(i) {
     if (newPassword.length < 6) return alert("Password must be at least 6 characters.");
     window.db.accounts[i].password = newPassword;
     saveToStorage();
-    alert("Password reset successfully!");
+    showToast("Password reset successfully!", "success");
 }
 
 function deleteAccount(i) {
@@ -407,42 +224,247 @@ function deleteAccount(i) {
         window.db.accounts.splice(i, 1);
         saveToStorage();
         renderAccounts();
+        showToast("Account deleted.", "danger");
+    }
+}
+
+/* ================= EMPLOYEES ================= */
+function renderEmployees() {
+    const tbody = document.getElementById("employeesList");
+    if (!window.db.employees || window.db.employees.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center">No employees.</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = window.db.employees.map((emp, i) => `
+        <tr>
+            <td>${emp.id}</td>
+            <td>${emp.email}</td>
+            <td>${emp.position}</td>
+            <td>${emp.dept}</td>
+            <td>
+                <button class="btn btn-warning btn-sm" onclick="editEmployee(${i})">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteEmployee(${i})">Delete</button>
+            </td>
+        </tr>`).join("");
+}
+
+function showEmployeeForm(i = null) {
+    document.getElementById("employeeForm").style.display = "block";
+    const deptSelect = document.getElementById("empDept");
+    deptSelect.innerHTML = window.db.departments.map(d =>
+        `<option value="${d.name}">${d.name}</option>`).join("");
+
+    if (i !== null) {
+        const emp = window.db.employees[i];
+        document.getElementById("empIndex").value = i;
+        document.getElementById("empId").value = emp.id;
+        document.getElementById("empEmail").value = emp.email;
+        document.getElementById("empPosition").value = emp.position;
+        document.getElementById("empDept").value = emp.dept;
+        document.getElementById("empHireDate").value = emp.hireDate;
+    } else {
+        document.getElementById("empIndex").value = "";
+        document.getElementById("empId").value = "";
+        document.getElementById("empEmail").value = "";
+        document.getElementById("empPosition").value = "";
+        document.getElementById("empHireDate").value = "";
+    }
+}
+
+function hideEmployeeForm() {
+    document.getElementById("employeeForm").style.display = "none";
+}
+
+function saveEmployee() {
+    const id       = document.getElementById("empId").value.trim();
+    const email    = document.getElementById("empEmail").value.trim();
+    const position = document.getElementById("empPosition").value.trim();
+    const dept     = document.getElementById("empDept").value;
+    const hireDate = document.getElementById("empHireDate").value;
+
+    if (!id || !email || !position || !dept || !hireDate) return alert("Please fill in all fields.");
+
+    const accountExists = window.db.accounts.find(a => a.email === email);
+    if (!accountExists) return alert("User email must match an existing account.");
+
+    if (!window.db.employees) window.db.employees = [];
+
+    const index = document.getElementById("empIndex").value;
+    const empData = { id, email, position, dept, hireDate };
+
+    if (index !== "") {
+        window.db.employees[index] = empData;
+    } else {
+        window.db.employees.push(empData);
     }
 
-    /* ================= REQUESTS ================= */
+    saveToStorage();
+    hideEmployeeForm();
+    renderEmployees();
+    showToast("Employee saved.", "success");
+}
+
+function editEmployee(i) { showEmployeeForm(i); }
+
+function deleteEmployee(i) {
+    if (confirm("Are you sure you want to delete this employee?")) {
+        window.db.employees.splice(i, 1);
+        saveToStorage();
+        renderEmployees();
+        showToast("Employee deleted.", "danger");
+    }
+}
+
+/* ================= DEPARTMENTS ================= */
+function renderDepartments() {
+    if (!window.db.departments) window.db.departments = [];
+    const tbody = document.getElementById("departmentsList");
+
+    if (window.db.departments.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">No departments.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = window.db.departments.map((d, i) => `
+        <tr>
+            <td>${d.name}</td>
+            <td>${d.description || "—"}</td>
+            <td>
+                <button class="btn btn-outline-primary btn-sm" onclick="editDepartment(${i})">Edit</button>
+                <button class="btn btn-outline-danger btn-sm" onclick="deleteDepartment(${i})">Delete</button>
+            </td>
+        </tr>`).join("");
+}
+
+function showDepartmentForm(i = null) {
+    document.getElementById("departmentForm").style.display = "block";
+    if (i !== null) {
+        const dept = window.db.departments[i];
+        document.getElementById("deptIndex").value = i;
+        document.getElementById("deptName").value = dept.name;
+        document.getElementById("deptDescription").value = dept.description || "";
+    } else {
+        document.getElementById("deptIndex").value = "";
+        document.getElementById("deptName").value = "";
+        document.getElementById("deptDescription").value = "";
+    }
+}
+
+function hideDepartmentForm() {
+    document.getElementById("departmentForm").style.display = "none";
+}
+
+function saveDepartment() {
+    const name        = document.getElementById("deptName").value.trim();
+    const description = document.getElementById("deptDescription").value.trim();
+
+    if (!name) return alert("Department name is required.");
+
+    if (!window.db.departments) window.db.departments = [];
+
+    const index = document.getElementById("deptIndex").value;
+    const deptData = { name, description };
+
+    if (index !== "") {
+        window.db.departments[parseInt(index)] = deptData;
+    } else {
+        window.db.departments.push(deptData);
+    }
+
+    saveToStorage();
+    hideDepartmentForm();
+    renderDepartments();
+    showToast("Department saved.", "success");
+}
+
+function editDepartment(i) { showDepartmentForm(i); }
+
+function deleteDepartment(i) {
+    if (confirm("Are you sure you want to delete this department?")) {
+        window.db.departments.splice(i, 1);
+        saveToStorage();
+        renderDepartments();
+        showToast("Department deleted.", "danger");
+    }
+}
+
+/* ================= REQUESTS ================= */
 function renderRequests() {
+    if (!currentUser) return;
     if (!window.db.requests) window.db.requests = [];
-    const userReq = window.db.requests.filter(r => r.employeeEmail === currentUser.email);
+
     const container = document.getElementById("requestsList");
 
-    if (userReq.length === 0) {
+    // ADMIN: show all requests in a table
+    if (currentUser.role === "Admin") {
+        container.innerHTML = `
+            <table class="table table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Requested By</th>
+                        <th>Email</th>
+                        <th>Type</th>
+                        <th>Items</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${window.db.requests.length === 0
+                        ? `<tr><td colspan="8" class="text-center text-muted">No requests yet.</td></tr>`
+                        : window.db.requests.map((r, i) => `
+                            <tr>
+                                <td>${i + 1}</td>
+                                <td>${r.employeeName || "—"}</td>
+                                <td>${r.employeeEmail}</td>
+                                <td>${r.type}</td>
+                                <td>${r.items.map(it => `${it.name} (x${it.qty})`).join(", ")}</td>
+                                <td>${r.date}</td>
+                                <td>
+                                    <span class="badge ${
+                                        r.status === "Pending"  ? "bg-warning text-dark" :
+                                        r.status === "Approved" ? "bg-success" : "bg-danger"
+                                    }">${r.status}</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-success btn-sm" onclick="updateRequestStatus(${i}, 'Approved')">✔</button>
+                                    <button class="btn btn-danger btn-sm ms-1" onclick="updateRequestStatus(${i}, 'Rejected')">✘</button>
+                                    <button class="btn btn-secondary btn-sm ms-1" onclick="deleteRequest(${i})">🗑</button>
+                                </td>
+                            </tr>`).join("")}
+                </tbody>
+            </table>`;
+        return;
+    }
+
+    // REGULAR USER: show only their own requests
+    const mine = window.db.requests.filter(r => r.employeeEmail === currentUser.email);
+
+    if (mine.length === 0) {
         container.innerHTML = `
             <p>You have no requests yet.</p>
-            <button class="btn btn-success btn-sm" onclick="showRequestModal()">Create One</button>
-        `;
+            <button class="btn btn-success btn-sm" onclick="showRequestForm()">Create One</button>`;
         return;
     }
 
     container.innerHTML = `
         <table class="table table-bordered">
             <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>Items</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                </tr>
+                <tr><th>#</th><th>Type</th><th>Items</th><th>Date</th><th>Status</th></tr>
             </thead>
             <tbody>
-                ${userReq.map(r => `
+                ${mine.map((r, i) => `
                     <tr>
+                        <td>${i + 1}</td>
                         <td>${r.type}</td>
-                        <td>${r.items.map(i => `${i.name} (x${i.qty})`).join(", ")}</td>
+                        <td>${r.items.map(it => `${it.name} (x${it.qty})`).join(", ")}</td>
                         <td>${r.date}</td>
                         <td>
                             <span class="badge ${
-                                r.status === 'Pending' ? 'bg-warning text-dark' :
-                                r.status === 'Approved' ? 'bg-success' : 'bg-danger'
+                                r.status === "Pending"  ? "bg-warning text-dark" :
+                                r.status === "Approved" ? "bg-success" : "bg-danger"
                             }">${r.status}</span>
                         </td>
                     </tr>`).join("")}
@@ -451,7 +473,6 @@ function renderRequests() {
 }
 
 function showRequestForm() {
-    // Reset modal
     document.getElementById("reqType").value = "Equipment";
     document.getElementById("reqItems").innerHTML = `
         <div class="d-flex gap-2 mb-2 item-row">
@@ -459,9 +480,11 @@ function showRequestForm() {
             <input class="form-control" type="number" value="1" style="width:80px">
             <button class="btn btn-success btn-sm" onclick="addItemRow()">+</button>
         </div>`;
+    document.getElementById("requestForm").style.display = "block";
+}
 
-    const modal = new bootstrap.Modal(document.getElementById("requestModal"));
-    modal.show();
+function hideRequestForm() {
+    document.getElementById("requestForm").style.display = "none";
 }
 
 function addItemRow() {
@@ -471,12 +494,8 @@ function addItemRow() {
     row.innerHTML = `
         <input class="form-control" placeholder="Item name">
         <input class="form-control" type="number" value="1" style="width:80px">
-        <button class="btn btn-danger btn-sm" onclick="removeItemRow(this)">x</button>`;
+        <button class="btn btn-danger btn-sm" onclick="this.closest('.item-row').remove()">×</button>`;
     container.appendChild(row);
-}
-
-function removeItemRow(btn) {
-    btn.parentElement.remove();
 }
 
 function submitRequest() {
@@ -487,12 +506,11 @@ function submitRequest() {
     rows.forEach(row => {
         const inputs = row.querySelectorAll("input");
         const name = inputs[0].value.trim();
-        const qty = inputs[1].value;
+        const qty  = inputs[1].value;
         if (name) items.push({ name, qty });
     });
 
-    if (items.length === 0) return alert("Please add at least one item.");
-
+    if (items.length === 0) return showToast("Please add at least one item.", "danger");
     if (!window.db.requests) window.db.requests = [];
 
     window.db.requests.push({
@@ -500,17 +518,32 @@ function submitRequest() {
         items,
         status: "Pending",
         date: new Date().toLocaleDateString(),
-        employeeEmail: currentUser.email
+        employeeEmail: currentUser.email,
+        employeeName: currentUser.firstName + " " + currentUser.lastName
     });
 
     saveToStorage();
-
-    // Close modal
-    bootstrap.Modal.getInstance(document.getElementById("requestModal")).hide();
+    hideRequestForm();
+    showToast("Request submitted!", "success");
     renderRequests();
 }
-    
+
+function updateRequestStatus(i, status) {
+    window.db.requests[i].status = status;
+    saveToStorage();
+    renderRequests();
+    showToast(`Request ${status}.`, status === "Approved" ? "success" : "danger");
 }
+
+function deleteRequest(i) {
+    if (confirm("Delete this request?")) {
+        window.db.requests.splice(i, 1);
+        saveToStorage();
+        renderRequests();
+        showToast("Request deleted.", "danger");
+    }
+}
+
 /* ================= STORAGE ================= */
 function loadFromStorage() {
     try {
@@ -536,7 +569,10 @@ function seedData() {
             role: "Admin",
             verified: true
         }],
-        departments: [{ name: "Engineering" }, { name: "HR" }],
+        departments: [
+            { name: "Engineering", description: "Software team" },
+            { name: "HR", description: "Human Resources" }
+        ],
         employees: [],
         requests: []
     };
@@ -546,35 +582,26 @@ function seedData() {
 /* ================= INIT ================= */
 window.addEventListener("DOMContentLoaded", () => {
     loadFromStorage();
+    checkExistingAuth();
 
     window.addEventListener("hashchange", handleRouting);
 
     if (!window.location.hash || window.location.hash === "#/") {
         window.location.hash = "#/";
-        handleRouting();
-    } else {
-        handleRouting();
     }
-
-    checkExistingAuth();
+    handleRouting();
 
     document.getElementById("registerForm").addEventListener("submit", e => {
         e.preventDefault();
-        const email = document.getElementById("registerEmail").value;
-        const password = document.getElementById("registerPassword").value;
+        const firstName = document.getElementById("firstName").value.trim();
+        const lastName  = document.getElementById("lastName").value.trim();
+        const email     = document.getElementById("registerEmail").value.trim();
+        const password  = document.getElementById("registerPassword").value.trim();
 
-        if (password.length < 6) return alert("Password too short");
-        if (window.db.accounts.find(a => a.email === email)) return alert("Email already exists");
+        if (password.length < 6) return showToast("Password too short.", "danger");
+        if (window.db.accounts.find(a => a.email === email)) return showToast("Email already exists.", "danger");
 
-        window.db.accounts.push({
-            firstName: document.getElementById("firstName").value,
-            lastName: document.getElementById("lastName").value,
-            email,
-            password,
-            role: "User",
-            verified: false
-        });
-
+        window.db.accounts.push({ firstName, lastName, email, password, role: "User", verified: false });
         localStorage.setItem("unverified_email", email);
         saveToStorage();
         navigateTo("#/verify-email");
@@ -582,16 +609,13 @@ window.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("loginForm").addEventListener("submit", e => {
         e.preventDefault();
-        const email = document.getElementById("loginEmail").value;
-        const password = document.getElementById("loginPassword").value;
+        const email    = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value.trim();
         const user = window.db.accounts.find(a =>
-            a.email === email &&
-            a.password === password &&
-            a.verified
-        );
+            a.email === email && a.password === password && a.verified);
 
         if (!user) {
-            document.getElementById("loginError").textContent = "Invalid credentials or not verified.";
+            document.getElementById("loginError").textContent = "Invalid credentials or account not verified.";
             return;
         }
 
@@ -600,173 +624,57 @@ window.addEventListener("DOMContentLoaded", () => {
         navigateTo("#/profile");
     });
 });
-/* ================= EMPLOYEES ================= */
-function renderEmployees() {
-    const tbody = document.getElementById("employeesList");
-    if (!window.db.employees || window.db.employees.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center">No employees.</td></tr>`;
-        return;
-    }
-    tbody.innerHTML = window.db.employees.map((emp, i) => {
-        const dept = window.db.departments.find(d => d.name === emp.dept) || {};
-        return `
-            <tr>
-                <td>${emp.id}</td>
-                <td>${emp.email}</td>
-                <td>${emp.position}</td>
-                <td>${emp.dept}</td>
-                <td>
-                    <button class="btn btn-warning btn-sm" onclick="editEmployee(${i})">Edit</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteEmployee(${i})">Delete</button>
-                </td>
-            </tr>`;
-    }).join("");
+function showProfileRequestForm() {
+    document.getElementById("profileReqType").value = "Equipment";
+    document.getElementById("profileReqItems").innerHTML = `
+        <div class="d-flex gap-2 mb-2 profile-item-row">
+            <input class="form-control" placeholder="Item name">
+            <input class="form-control" type="number" value="1" style="width:80px">
+            <button class="btn btn-success btn-sm" onclick="addProfileItemRow()">+</button>
+        </div>`;
+    document.getElementById("profileRequestForm").style.display = "block";
 }
 
-function showEmployeeForm(i = null) {
-    document.getElementById("employeeForm").style.display = "block";
-
-    // Populate department dropdown
-    const deptSelect = document.getElementById("empDept");
-    deptSelect.innerHTML = window.db.departments.map(d =>
-        `<option value="${d.name}">${d.name}</option>`
-    ).join("");
-
-    if (i !== null) {
-        const emp = window.db.employees[i];
-        document.getElementById("empIndex").value = i;
-        document.getElementById("empId").value = emp.id;
-        document.getElementById("empEmail").value = emp.email;
-        document.getElementById("empPosition").value = emp.position;
-        document.getElementById("empDept").value = emp.dept;
-        document.getElementById("empHireDate").value = emp.hireDate;
-    } else {
-        document.getElementById("empIndex").value = "";
-        document.getElementById("empId").value = "";
-        document.getElementById("empEmail").value = "";
-        document.getElementById("empPosition").value = "";
-        document.getElementById("empHireDate").value = "";
-    }
+function hideProfileRequestForm() {
+    document.getElementById("profileRequestForm").style.display = "none";
 }
 
-function hideEmployeeForm() {
-    document.getElementById("employeeForm").style.display = "none";
+function addProfileItemRow() {
+    const container = document.getElementById("profileReqItems");
+    const row = document.createElement("div");
+    row.className = "d-flex gap-2 mb-2 profile-item-row";
+    row.innerHTML = `
+        <input class="form-control" placeholder="Item name">
+        <input class="form-control" type="number" value="1" style="width:80px">
+        <button class="btn btn-danger btn-sm" onclick="this.closest('.profile-item-row').remove()">×</button>`;
+    container.appendChild(row);
 }
 
-function saveEmployee() {
-    const id = document.getElementById("empId").value.trim();
-    const email = document.getElementById("empEmail").value.trim();
-    const position = document.getElementById("empPosition").value.trim();
-    const dept = document.getElementById("empDept").value;
-    const hireDate = document.getElementById("empHireDate").value;
+function submitProfileRequest() {
+    const type = document.getElementById("profileReqType").value;
+    const rows = document.querySelectorAll(".profile-item-row");
+    const items = [];
 
-    if (!id || !email || !position || !dept || !hireDate) {
-        return alert("Please fill in all fields.");
-    }
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll("input");
+        const name = inputs[0].value.trim();
+        const qty  = inputs[1].value;
+        if (name) items.push({ name, qty });
+    });
 
-    // Check if email matches an existing account
-    const accountExists = window.db.accounts.find(a => a.email === email);
-    if (!accountExists) {
-        return alert("User email must match an existing account.");
-    }
+    if (items.length === 0) return showToast("Please add at least one item.", "danger");
+    if (!window.db.requests) window.db.requests = [];
 
-    if (!window.db.employees) window.db.employees = [];
-
-    const index = document.getElementById("empIndex").value;
-    const empData = { id, email, position, dept, hireDate };
-
-    if (index !== "") {
-        window.db.employees[index] = empData;
-    } else {
-        window.db.employees.push(empData);
-    }
+    window.db.requests.push({
+        type,
+        items,
+        status: "Pending",
+        date: new Date().toLocaleDateString(),
+        employeeEmail: currentUser.email,
+        employeeName: currentUser.firstName + " " + currentUser.lastName
+    });
 
     saveToStorage();
-    hideEmployeeForm();
-    renderEmployees();
-}
-
-function editEmployee(i) {
-    showEmployeeForm(i);
-}
-
-function deleteEmployee(i) {
-    if (confirm("Are you sure you want to delete this employee?")) {
-        window.db.employees.splice(i, 1);
-        saveToStorage();
-        renderEmployees();
-    }
-}
-/* ================= DEPARTMENTS ================= */
-function renderDepartments() {
-    if (!window.db.departments) window.db.departments = [];
-    const tbody = document.getElementById("departmentsList");
-
-    if (window.db.departments.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">No departments.</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = window.db.departments.map((d, i) => `
-        <tr>
-            <td>${d.name}</td>
-            <td>${d.description || "—"}</td>
-            <td>
-                <button class="btn btn-outline-primary btn-sm" onclick="editDepartment(${i})">Edit</button>
-                <button class="btn btn-outline-danger btn-sm" onclick="deleteDepartment(${i})">Delete</button>
-            </td>
-        </tr>`).join("");
-}
-
-function showDepartmentForm(i = null) {
-    document.getElementById("departmentForm").style.display = "block";
-
-    if (i !== null) {
-        const dept = window.db.departments[i];
-        document.getElementById("deptIndex").value = i;
-        document.getElementById("deptName").value = dept.name;
-        document.getElementById("deptDescription").value = dept.description || "";
-    } else {
-        document.getElementById("deptIndex").value = "";
-        document.getElementById("deptName").value = "";
-        document.getElementById("deptDescription").value = "";
-    }
-}
-
-function hideDepartmentForm() {
-    document.getElementById("departmentForm").style.display = "none";
-}
-
-function saveDepartment() {
-    const name = document.getElementById("deptName").value.trim();
-    const description = document.getElementById("deptDescription").value.trim();
-
-    if (!name) return alert("Department name is required.");
-
-    if (!window.db.departments) window.db.departments = [];
-
-    const index = document.getElementById("deptIndex").value;
-    const deptData = { name, description };
-
-    if (index !== "") {
-        window.db.departments[parseInt(index)] = deptData;
-    } else {
-        window.db.departments.push(deptData);
-    }
-
-    saveToStorage();
-    hideDepartmentForm();
-    renderDepartments();
-}
-
-function editDepartment(i) {
-    showDepartmentForm(i);
-}
-
-function deleteDepartment(i) {
-    if (confirm("Are you sure you want to delete this department?")) {
-        window.db.departments.splice(i, 1);
-        saveToStorage();
-        renderDepartments();
-    }
+    hideProfileRequestForm();
+    showToast("Request submitted!", "success");
 }
